@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi primer analizador léxico web</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Cambiar de center a flex-start */
+            min-height: 100vh; /* Cambia height por min-height para ocupar el 100% del alto */
+            margin: 0;
+            overflow: auto; /* Añade esto para permitir scroll si el contenido es más grande */
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 800px;
+            margin: 50px 0; /* Reducir margen superior e inferior para evitar el corte */
+        }
+        .box {
+            background-color: #e0e7ff;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        h1 {
+            text-align: center;
+        }
+        .flex-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+        .flex-item {
+            width: 48%;
+        }
+        textarea {
+            width: 95%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            background-color: white;
+        }
+        input[type="submit"], #clear-button {
+            width: 48%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        input[type="submit"]:hover, #clear-button:hover {
+            background-color: #0056b3;
+        }
+        #clear-button {
+            background-color: red;
+        }
+        #clear-button:disabled {
+            background-color: grey;
+        }
+        input[type="file"] {
+            display: block;
+            margin: 0 auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mi primer analizador léxico web</h1>
+        
+        <!-- Formulario principal -->
+        <form action="/analizar" method="POST" enctype="multipart/form-data">
+            <div class="box">
+                <!-- Botón de subir archivo centrado -->
+                <input type="file" name="file" accept=".txt" id="file-input">
+            </div>
+
+            <div class="flex-container">
+                <div class="flex-item">
+                    <div class="box">
+                        <!-- Cuadro de texto para ingresar código -->
+                        <textarea id="input-text" name="text" rows="10" placeholder="Introduce tu texto aquí..."></textarea>
+                    </div>
+
+                    <!-- Contenedor de los botones -->
+                    <div style="display: flex; justify-content: space-between;">
+                        <!-- Botón Analizar (enviar el formulario) -->
+                        <input type="submit" value="Analizar">
+
+                        <!-- Botón Borrar (no enviar el formulario, solo limpiar el campo) -->
+                        <button type="button" id="clear-button">Borrar</button>
+                    </div>
+                </div>
+
+                <div class="flex-item">
+                    <div class="box">
+                        {% if tokens %}
+                        <textarea id="token-area" rows="10" readonly style="width: 95%; text-align: left;"> 
+                            {% for token in tokens %}
+                            {{ token['valor'] }}
+                            {% endfor %}
+                        </textarea>
+                        {% else %}
+                        <textarea id="token-area" rows="10" readonly style="width: 95%; text-align: left;">Tokens aparecerán aquí...</textarea>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Primera tabla: Análisis Léxico -->
+        {% if tokens %}
+        <div id="lexical-analysis" class="box">
+            <table>
+                <h2>Analizador Lexico</h2>
+                <thead>
+                    <tr>
+                        <th>Línea</th>
+                        <th>Lexema</th>
+                        <th>Símbolos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for token in tokens %}
+                    <tr>
+                        <td>{{ token['linea'] }}</td>
+                        <td>{{ token['tipo'] }}</td>
+                        <td>{{ token['valor'] }}</td>
+                    </tr>                    
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Segunda tabla: Análisis Sintáctico -->
+        {% if sintaxis %}
+        <div id="syntactic-analysis" class="box">
+            <table>
+                <h2>Analizador Sintáctico</h2>
+                <thead>
+                    <tr>
+                        <th>Línea</th>
+                        <th>Token</th>
+                        <th>Escritura</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resultado in sintaxis %}
+                    <tr>
+                        <td>{{ resultado.linea }}</td>
+                        <td>{{ resultado.tipo }}</td>
+                        <td>{{ resultado.escritura }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // JavaScript para cargar el contenido del archivo en el textarea
+        document.getElementById('file-input').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('input-text').value = e.target.result;
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // JavaScript para el botón de borrar
+        document.addEventListener('DOMContentLoaded', function() {
+            const tokenArea = document.getElementById('token-area');
+            const clearButton = document.getElementById('clear-button');
+            const lexicalAnalysis = document.getElementById('lexical-analysis');
+            const syntacticAnalysis = document.getElementById('syntactic-analysis');
+
+            clearButton.addEventListener('click', function() {
+                document.getElementById('input-text').value = "";
+                tokenArea.value = "Tokens aparecerán aquí...";
+                lexicalAnalysis.classList.add('hidden');
+                syntacticAnalysis.classList.add('hidden');
+                clearButton.disabled = true;
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
